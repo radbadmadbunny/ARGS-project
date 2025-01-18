@@ -3,13 +3,9 @@
 #For-loop and variable based on how many players: Theoretically infinite also (Look low for more context)
 #Charge and summon spell would be fun and possible however the mage already has so many attacks.
 #It could be interesting if I added a passive ability to the rogue where if he doesn't use any offensive abilities for some turns it increases like damage and/or dexterity.
-#Something else could work too I don't know man
-#possibly rename basic spell magic missile, magic bolt, piercing bolt, magic strike, etc.
 #I know mage has too much but what about meteor and/or magic weapon (gives strength for one turn or something)
-#BREAKTHROUGH
-#Hard code the code for extra players for now
-#Make a function that uses a player as the variable thing.
-#Make self.options
+#Add ability to change name afterward
+#Improve text visibility
 
 import random
 
@@ -72,16 +68,17 @@ class Character:
         if self.blade_effect == "poison":
             target.poison = 4
             self.blade_effect = "nothing"
-            print(self.name, "poisons", target.name, "with their toxic dagger")
+            self.options.append("Poison Blade")
+            print(self.name, "poisons", target.name, "with their toxic dagger.\n" + str(self.name) + "'s blade is no longer acidic.")
         target.health -= damage
-        print(self.name, "attacks", target.name + ".\n" + str(target.name) + "takes", damage, "damage!")
+        target.maximum_checker()
+        print(self.name, "attacks", target.name + ".\n" + target.name, "takes", str(damage), "damage!")
 
     def health_potion(self, options):
         if self.health_potions > 0:
             before_health = self.health
             self.health += 15
             self.health_potions -= 1
-            print(self.health_potions)
             self.maximum_checker()
             after_health = self.health
             health_healed = after_health - before_health
@@ -128,7 +125,7 @@ class Character:
             self.options.append("Magic Bolt")
 
     def alive_checker(self):
-        if self.alive and self.health < 0:
+        if self.alive and self.health <= 0:
             self.alive = False
             print(self.name, "has died!")
             player_name_list.remove(self.name)
@@ -147,6 +144,8 @@ class Character:
                     player_name_list.append(self.name)
                     if (target_name != player1.name) and (target_name != player2.name) and (target_name != player3.name) and (target_name != player4.name):
                         print("That is not a valid target.")
+                    elif target_name == self.name:
+                        print("That is not a valid target.")
                     else:
                         self.melee_attack(target_name)
                         acted = True
@@ -156,6 +155,7 @@ class Character:
                 acted = True
             elif action.lower() == "restore health" or action.lower() == "heal":
                 self.health_potion(self.options)
+                acted = True
             elif isinstance(self, Rogue):
                 if action.lower() == "poison blade" or action.lower() == "poison":
                     self.poison_blade()
@@ -169,8 +169,10 @@ class Character:
                         if (target_name != player1.name) and (target_name != player2.name) and (
                                 target_name != player3.name) and (target_name != player4.name):
                             print("That is not a valid target.")
+                        elif target_name == self.name:
+                            print("That is not a valid target.")
                         else:
-                            self.magic_attack(player2, "fire")
+                            self.magic_attack(target_name, "fire")
                             acted = True
                             break
                 elif action.lower() == "magic bolt" or action.lower() == "bolt":
@@ -181,8 +183,10 @@ class Character:
                         if (target_name != player1.name) and (target_name != player2.name) and (
                                 target_name != player3.name) and (target_name != player4.name):
                             print("That is not a valid target.")
+                        elif target_name == self.name:
+                            print("That is not a valid target.")
                         else:
-                            self.magic_attack(player2, "bolt")
+                            self.magic_attack(target_name, "bolt")
                             acted = True
                             break
                 elif action.lower() == "erosion ray" or action.lower() == "erosion":
@@ -193,8 +197,10 @@ class Character:
                         if (target_name != player1.name) and (target_name != player2.name) and (
                                 target_name != player3.name) and (target_name != player4.name):
                             print("That is not a valid target.")
+                        elif target_name == self.name:
+                            print("That is not a valid target.")
                         else:
-                            self.magic_attack(player2, "erosion")
+                            self.magic_attack(target_name, "erosion")
                             acted = True
                             break
             if not acted:
@@ -228,22 +234,34 @@ class Character:
             self.mana = 0
 
 class Mage(Character):
-    def magic_attack(self, target, spell_type):
+    def magic_attack(self, target_name, spell_type):
         damage = 0
-        if spell_type == "normal":
+        shot_spell = False
+        target = base_character
+        if target_name == player1.name:
+            target = player1
+        elif target_name == player2.name:
+            target = player2
+        elif target_name == player3.name:
+            target = player3
+        elif target_name == player4.name:
+            target = player4
+        if spell_type == "bolt":
             if self.mana >= 3:
-                damage = self.intellect * 1.2
+                damage = self.wisdom * 1.2
                 self.mana -= 3
                 print(self.name, "shot a magic bolt at", str(target.name) + ".")
+                shot_spell = True
             else:
                 print("That spell requires 3 mana and you have", str(self.mana) + ". You cannot afford that spell.")
         #Fire Ball
         elif spell_type == "fire":
             if self.mana >= 6:
-                damage = self.intellect * 1.6
+                damage = self.wisdom * 1.6
                 target.fire = 2
                 self.mana -= 6
                 print(self.name, "shoots a fireball which sets ablaze", str(target.name) + ".")
+                shot_spell = True
             else:
                 print("That spell requires 6 mana and you have", str(self.mana) + ". You cannot afford that spell.")
         #Lowers Max hp: Damage but cooler
@@ -252,21 +270,25 @@ class Mage(Character):
             if self.mana >= 7:
                 target.fortitude -= 5
                 target.maximum_checker()
-                damage = self.intellect * 1.3
+                damage = self.wisdom * 1.3
                 self.mana -= 7
-                print(self.name, "erodes away at", target.name + "'s health.")
+                print(self.name, "erodes away at", target.name + "'s health and they lose 5 maximum health.")
+                shot_spell = True
             else:
                 print("That spell requires 7 mana and you have", str(self.mana) + ". You cannot afford that spell.")
         if crit_hit(self.dexterity):
             damage *= 2
         target.health -= damage
-        print(target.name, "takes", damage, "damage!")
+        target.maximum_checker()
+        if shot_spell:
+            print(target.name, "takes", damage, "damage!")
 
 class Rogue(Character):
     def poison_blade(self):
         #Makes next melee attack inflict poison
         self.blade_effect = "poison"
         print(self.name, "dips their blade in poison. Their dagger is now imbued with poison.")
+        self.options.remove("Poison Blade")
 
 class ExtraInfo:
     def __init__(self, alive_people):
@@ -275,11 +297,11 @@ class ExtraInfo:
 
 #def print_area():
 base_character = Character(0,0,2,1,3,45,45,
-                    20,20,3,3,"nothing",True, "nameless", "undefined")
+                    20,20,3,3,"nothing",True, "nameless", ["Melee Attack", "Restore Mana", "Restore Health"])
 rogue_class = Rogue(0,0,2,1,5,50,50,
-                    20,20,2,5,"nothing",True, "nameless", "undefined")
+                    20,20,2,5,"nothing",True, "nameless", ["Melee Attack", "Restore Mana", "Restore Health"])
 mage_class = Mage(0,0,1,2,1,40,40,
-                   20,20,5,1,"nothing",True, "nameless", "undefined")
+                   20,20,5,1,"nothing",True, "nameless", ["Melee Attack", "Restore Mana", "Restore Health"])
 
 #Melee users should have higher dext, less magic stats, strength based
 #Magic users should have less health slightly more mana and such and not really any dext
@@ -290,7 +312,15 @@ mage_class = Mage(0,0,1,2,1,40,40,
 #Consider making for-loop and variable based on how many players: Theoretically infinite also
 #Optimize maybe make just one variable that gets reused
 
-player_count = int(input("How many people will be playing this game? (Max. 4)\n"))
+while True:
+    player_count = int(input("How many people will be playing this game? (Max. 4)\n"))
+    if isinstance(player_count, int):
+        if int(player_count) < 2:
+            print("There must be more players.")
+        else:
+            break
+    else:
+        print("That is not a valid answer.")
 
 info_character = ExtraInfo(player_count)
 
@@ -305,10 +335,12 @@ for x in range (1, player_count + 1):
         while True:
             class_choice = input("Player 1, what class shall you be?(Rogue, Mage)\n")
             if class_choice.lower() == "rogue":
-                player1 = rogue_class
+                player1 = Rogue(0,0,2,1,5,50,50,
+                    20,20,2,5,"nothing",True, "nameless", ["Melee Attack", "Restore Mana", "Restore Health"])
                 break
             elif class_choice.lower() == "mage":
-                player1 = mage_class
+                player1 = Mage(0,0,1,2,1,40,40,
+                   20,20,5,1,"nothing",True, "nameless", ["Melee Attack", "Restore Mana", "Restore Health"])
                 break
             else:
                 print("Please try again.")
@@ -316,10 +348,12 @@ for x in range (1, player_count + 1):
         while True:
             class_choice = input("Player 2, what class shall you be?(Rogue, Mage)\n")
             if class_choice.lower() == "rogue":
-                player2 = rogue_class
+                player2 = Rogue(0,0,2,1,5,50,50,
+                    20,20,2,5,"nothing",True, "nameless", ["Melee Attack", "Restore Mana", "Restore Health"])
                 break
             elif class_choice.lower() == "mage":
-                player2 = mage_class
+                player2 = Mage(0,0,1,2,1,40,40,
+                   20,20,5,1,"nothing",True, "nameless", ["Melee Attack", "Restore Mana", "Restore Health"])
                 break
             else:
                 print("Please try again.")
@@ -327,10 +361,12 @@ for x in range (1, player_count + 1):
         while True:
             class_choice = input("Player 3, what class shall you be?(Rogue, Mage)\n")
             if class_choice.lower() == "rogue":
-                player3 = rogue_class
+                player3 = Rogue(0,0,2,1,5,50,50,
+                    20,20,2,5,"nothing",True, "nameless", ["Melee Attack", "Restore Mana", "Restore Health"])
                 break
             elif class_choice.lower() == "mage":
-                player3 = mage_class
+                player3 = Mage(0,0,1,2,1,40,40,
+                   20,20,5,1,"nothing",True, "nameless", ["Melee Attack", "Restore Mana", "Restore Health"])
                 break
             else:
                 print("Please try again.")
@@ -338,10 +374,12 @@ for x in range (1, player_count + 1):
         while True:
             class_choice = input("Player 4, what class shall you be?(Rogue, Mage)\n")
             if class_choice.lower() == "rogue":
-                player4 = rogue_class
+                player4 = Rogue(0,0,2,1,5,50,50,
+                    20,20,2,5,"nothing",True, "nameless", ["Melee Attack", "Restore Mana", "Restore Health"])
                 break
             elif class_choice.lower() == "mage":
-                player4 = mage_class
+                player4 = Mage(0,0,1,2,1,40,40,
+                   20,20,5,1,"nothing",True, "nameless", ["Melee Attack", "Restore Mana", "Restore Health"])
                 break
             else:
                 print("Please try again.")
@@ -356,14 +394,6 @@ if player_count >= 4:
     player4.name = input("Player 4, what is your name?\n")
     player_name_list.append(player4.name)
 
-
-player1.options = ["Melee Attack", "Restore Mana", "Restore Health"]
-player2.options = ["Melee Attack", "Restore Mana", "Restore Health"]
-if player_count > 2:
-    player3.options = ["Melee Attack", "Restore Mana", "Restore Health"]
-if player_count > 3:
-    player4.options = ["Melee Attack", "Restore Mana", "Restore Health"]
-
 player1.options_maker()
 player2.options_maker()
 if player_count > 2:
@@ -374,11 +404,11 @@ if player_count > 3:
 
 def health_print():
     if player_count == 2:
-        print(player1.name, player1.health, ":", player2.name, player2.health)
+        print(player1.name, str(player1.health) + "hp,", str(player1.mana) + "mp :", player2.name, str(player2.health) + "hp,", str(player2.mana) + "mp")
     elif player_count == 3:
-        print(player1.name, player1.health, ":", player2.name, player2.health, ":", player3.name, player3.health)
+        print(player1.name, str(player1.health) + "hp,", str(player1.mana) + "mp :", player2.name, str(player2.health) + "hp,", str(player2.mana) + "mp :", player3.name, str(player3.health) + "hp,", str(player3.mana) + "mp")
     elif player_count == 4:
-        print(player1.name, player1.health, ":", player2.name, player2.health, ":", player3.name, player3.health, ":", player4.name, player4.health)
+        print(player1.name, str(player1.health) + "hp,", str(player1.mana) + "mp :", player2.name, str(player2.health) + "hp,", str(player2.mana) + "mp :", player3.name, str(player3.health) + "hp,", str(player3.mana) + "mp :", player4.name, str(player4.health) + "hp,", str(player4.mana) + "mp")
 
 def alive_check():
     player1.alive_checker()
@@ -391,26 +421,31 @@ def alive_check():
 turn_count = 0
 for x in range(0,10):
     print("\n")
+print("Hp = Health, Mp = Mana")
 health_print()
 
 while info_character.alive_people > 1:
+    alive_check()
     if player1.alive:
         player1.turn_play()
         alive_check()
         turn_count += 1
         health_print()
-    if player1.alive:
+    if player2.alive:
         player2.turn_play()
+        alive_check()
         turn_count += 1
         health_print()
     if player_count > 2:
-        if player1.alive:
+        if player3.alive:
             player3.turn_play()
+            alive_check()
             health_print()
             turn_count += 1
     if player_count > 3:
-        if player1.alive:
+        if player4.alive:
             player4.turn_play()
+            alive_check()
             health_print()
             turn_count += 1
 
